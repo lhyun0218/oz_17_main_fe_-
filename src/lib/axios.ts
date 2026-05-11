@@ -16,10 +16,15 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // 응답 인터셉터: 401 응답 시 자동 로그아웃 처리 (Requirements 3.2)
+// /auth/login 경로의 401은 세션 만료가 아닌 로그인 실패이므로 제외
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url ?? ''
+    const isLoginRequest =
+      requestUrl.includes('/auth/login') || requestUrl.includes('/auth/admin/login')
+
+    if (error.response?.status === 401 && !isLoginRequest) {
       useAuthStore.getState().logout();
       window.location.href = '/login?expired=true';
     }

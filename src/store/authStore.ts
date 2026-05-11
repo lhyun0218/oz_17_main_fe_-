@@ -30,12 +30,12 @@ const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ token: state.token }),
-      onRehydrateStorage: () => (state) => {
-        if (state?.token) {
-          state.isAuthenticated = true;
-        }
-      },
+      // token, user, isAuthenticated 모두 localStorage에 저장
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );

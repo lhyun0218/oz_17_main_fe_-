@@ -1,10 +1,19 @@
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import heroImg from '../assets/univpic.png'
 import { LoginForm } from '../features/auth/components/LoginForm'
 
 export function LoginPage() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const isExpired = searchParams.get('expired') === 'true'
+
+  // ?expired=true 파라미터를 읽은 후 URL에서 제거 (새로고침 시 반복 표시 방지)
+  useEffect(() => {
+    if (isExpired) {
+      navigate('/login', { replace: true })
+    }
+  }, [isExpired, navigate])
 
   return (
     /* 전체 배경: 연한 회색 */
