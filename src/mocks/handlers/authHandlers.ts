@@ -1,10 +1,53 @@
 import { http, HttpResponse } from 'msw'
 import { studentDB } from '../fixtures/students'
 
-// 가입된 계정 비밀번호 저장소 (회원가입 시 등록)
-const registeredPasswords: Record<string, string> = {
-  '20240001': 'Test1234!', // 기본 테스트 계정
+// ─── localStorage 기반 비밀번호 저장소 ───────────────────────
+// 새로고침 후에도 회원가입한 계정이 유지됩니다.
+const PASSWORDS_KEY = 'mock-registered-passwords'
+
+function loadPasswords(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(PASSWORDS_KEY)
+    return raw ? JSON.parse(raw) : { '20240001': 'Test1234!' }
+  } catch {
+    return { '20240001': 'Test1234!' }
+  }
 }
+
+function savePasswords(passwords: Record<string, string>): void {
+  localStorage.setItem(PASSWORDS_KEY, JSON.stringify(passwords))
+}
+
+// 초기 기본 계정이 없으면 세팅
+const initial = loadPasswords()
+if (!initial['20240001']) {
+  initial['20240001'] = 'Test1234!'
+  savePasswords(initial)
+}
+
+// ─── localStorage 기반 isRegistered 저장소 ───────────────────
+const REGISTERED_KEY = 'mock-registered-students'
+
+function loadRegistered(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(REGISTERED_KEY)
+    return raw ? JSON.parse(raw) : { '20240001': true }
+  } catch {
+    return { '20240001': true }
+  }
+}
+
+function saveRegistered(registered: Record<string, boolean>): void {
+  localStorage.setItem(REGISTERED_KEY, JSON.stringify(registered))
+}
+
+// studentDB의 isRegistered를 localStorage 기준으로 동기화
+const registeredMap = loadRegistered()
+studentDB.forEach((s) => {
+  if (registeredMap[s.studentId] !== undefined) {
+    s.isRegistered = registeredMap[s.studentId]
+  }
+})
 
 export const authHandlers = [
   // POST /auth/login (학생) — 동적 계정 지원
@@ -12,7 +55,8 @@ export const authHandlers = [
     const body = await request.json() as { studentId: string; password: string }
     const { studentId, password } = body
 
-    const storedPassword = registeredPasswords[studentId]
+    const passwords = loadPasswords()
+    const storedPassword = passwords[studentId]
     if (storedPassword && storedPassword === password) {
       const student = studentDB.find((s) => s.studentId === studentId)
       return HttpResponse.json({
@@ -44,8 +88,8 @@ export const authHandlers = [
     const body = await request.json() as { studentId: string; name: string }
     const { studentId, name } = body
 
-    const existing = studentDB.find((s) => s.studentId === studentId)
-    if (existing?.isRegistered) {
+    const registered = loadRegistered()
+    if (registered[studentId]) {
       return HttpResponse.json({ message: '이미 가입된 학번입니다' }, { status: 409 })
     }
 
@@ -60,15 +104,26 @@ export const authHandlers = [
     return HttpResponse.json({ verified: true })
   }),
 
-  // POST /auth/signup — 가입 완료 시 비밀번호 저장 + isRegistered 업데이트
+  // POST /auth/signup — 가입 완료 시 비밀번호 + isRegistered를 localStorage에 저장
   http.post('/auth/signup', async ({ request }) => {
     const body = await request.json() as { studentId: string; name: string; password: string }
+
+    // 비밀번호 저장
+    const passwords = loadPasswords()
+    passwords[body.studentId] = body.password
+    savePasswords(passwords)
+
+    // isRegistered 저장
+    const registered = loadRegistered()
+    registered[body.studentId] = true
+    saveRegistered(registered)
+
+    // studentDB 메모리도 동기화
     const student = studentDB.find((s) => s.studentId === body.studentId)
     if (student) {
       student.isRegistered = true
-      // 비밀번호 저장 (이후 로그인에 사용)
-      registeredPasswords[body.studentId] = body.password
     }
+
     return new HttpResponse(null, { status: 201 })
   }),
 ]
