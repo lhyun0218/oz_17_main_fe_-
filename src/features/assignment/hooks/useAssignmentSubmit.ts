@@ -1,18 +1,15 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { fileSchema } from '../schemas/assignmentSchema'
 import { submitAssignment } from '../api/assignmentApi'
 
 export function useAssignmentSubmit(assignmentId: string) {
+  const queryClient = useQueryClient()
   const [files, setFiles] = useState<File[]>([])
   const [fileErrors, setFileErrors] = useState<string[]>([])
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  /**
-   * 파일을 fileSchema로 검증 후 목록에 추가한다.
-   * 검증 실패 시 오류 메시지를 fileErrors에 추가한다.
-   */
   function addFile(file: File) {
     const result = fileSchema.safeParse(file)
     if (!result.success) {
@@ -24,17 +21,10 @@ export function useAssignmentSubmit(assignmentId: string) {
     setFileErrors([])
   }
 
-  /**
-   * 파일 목록에서 특정 인덱스의 파일을 제거한다.
-   */
   function removeFile(index: number) {
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  /**
-   * 마감 여부를 확인한다.
-   * dueDate가 현재 시각보다 이전이면 마감된 것으로 판단한다.
-   */
   function isExpired(dueDate: string): boolean {
     return new Date(dueDate) < new Date()
   }
@@ -45,10 +35,10 @@ export function useAssignmentSubmit(assignmentId: string) {
     onSuccess: () => {
       setSuccessMessage('과제가 성공적으로 제출되었습니다')
       setSubmitError(null)
-      // 3초 후 성공 메시지 자동 제거
-      setTimeout(() => {
-        setSuccessMessage(null)
-      }, 3000)
+      // 과제 상세 쿼리 무효화 → isSubmitted: true로 즉시 반영
+      queryClient.invalidateQueries({ queryKey: ['assignment', assignmentId] })
+      // 대시보드 과제 목록도 갱신
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
     onError: () => {
       setSubmitError('제출에 실패했습니다. 다시 시도해 주세요')
