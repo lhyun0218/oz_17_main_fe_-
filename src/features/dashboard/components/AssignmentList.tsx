@@ -49,7 +49,16 @@ const AssignmentList = ({ assignments }: AssignmentListProps) => {
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-5 h-full flex flex-col">
-      <h2 className="text-base font-semibold text-gray-700 mb-4">미제출 과제</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-gray-700">미제출 과제</h2>
+        <button
+          type="button"
+          onClick={() => navigate('/assignments')}
+          className="text-xs text-blue-500 hover:text-blue-700 font-medium"
+        >
+          전체 보기 →
+        </button>
+      </div>
 
       {unsubmitted.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">

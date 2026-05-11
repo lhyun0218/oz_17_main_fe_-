@@ -10,6 +10,7 @@ import CoursesPage from './pages/CoursesPage'
 import AttendancePage from './pages/AttendancePage'
 import GradesPage from './pages/GradesPage'
 import EnrollmentPage from './pages/EnrollmentPage'
+import AssignmentsPage from './pages/AssignmentsPage'
 import AdminLoginPage from './pages/AdminLoginPage'
 import AdminPage from './pages/AdminPage'
 import useAdminStore from './store/adminStore'
@@ -38,7 +39,7 @@ function App() {
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/courses/:courseId/lectures/:lectureId?" element={<LecturePage />} />
             <Route path="/enrollment" element={<EnrollmentPage />} />
-            <Route path="/assignments" element={<DashboardPage />} />
+            <Route path="/assignments" element={<AssignmentsPage />} />
             <Route path="/assignments/:assignmentId" element={<AssignmentPage />} />
             <Route path="/attendance" element={<AttendancePage />} />
             <Route path="/grades" element={<GradesPage />} />
