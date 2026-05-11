@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { studentDB } from '../fixtures/students'
+import { getStudentDB, studentDB, persistDB } from '../fixtures/db'
 
 // ─── localStorage 기반 비밀번호 저장소 ───────────────────────
 // 새로고침 후에도 회원가입한 계정이 유지됩니다.
@@ -43,7 +43,7 @@ function saveRegistered(registered: Record<string, boolean>): void {
 
 // studentDB의 isRegistered를 localStorage 기준으로 동기화
 const registeredMap = loadRegistered()
-studentDB.forEach((s) => {
+getStudentDB().forEach((s) => {
   if (registeredMap[s.studentId] !== undefined) {
     s.isRegistered = registeredMap[s.studentId]
   }
@@ -58,7 +58,7 @@ export const authHandlers = [
     const passwords = loadPasswords()
     const storedPassword = passwords[studentId]
     if (storedPassword && storedPassword === password) {
-      const student = studentDB.find((s) => s.studentId === studentId)
+      const student = getStudentDB().find((s) => s.studentId === studentId)
       return HttpResponse.json({
         token: `mock-jwt-token-${studentId}`,
         user: { studentId, name: student?.name ?? '학생' },
@@ -83,7 +83,7 @@ export const authHandlers = [
     return new HttpResponse(null, { status: 401 })
   }),
 
-  // POST /auth/signup/verify — studentDB 기반으로 동적 확인
+  // POST /auth/signup/verify — 항상 최신 studentDB 기준으로 확인
   http.post('/auth/signup/verify', async ({ request }) => {
     const body = await request.json() as { studentId: string; name: string }
     const { studentId, name } = body
@@ -93,7 +93,7 @@ export const authHandlers = [
       return HttpResponse.json({ message: '이미 가입된 학번입니다' }, { status: 409 })
     }
 
-    const student = studentDB.find(
+    const student = getStudentDB().find(
       (s) => s.studentId === studentId && s.name === name && s.status !== '제적'
     )
 
@@ -119,9 +119,13 @@ export const authHandlers = [
     saveRegistered(registered)
 
     // studentDB 메모리도 동기화
-    const student = studentDB.find((s) => s.studentId === body.studentId)
+    const current = getStudentDB()
+    const student = current.find((s) => s.studentId === body.studentId)
     if (student) {
       student.isRegistered = true
+      studentDB.length = 0
+      studentDB.push(...current)
+      persistDB.students()
     }
 
     return new HttpResponse(null, { status: 201 })

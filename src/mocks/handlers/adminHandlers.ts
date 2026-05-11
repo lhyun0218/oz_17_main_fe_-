@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import {
   studentDB, courseDB, enrollmentDB, gradeDB, attendanceDB,
-  scoreToGrade, gradeToGpa, persistDB,
+  scoreToGrade, gradeToGpa, persistDB, getStudentDB, getCourseDB,
   type StudentRecord, type GradeRecord, type EnrollmentRecord, type AttendanceRecord,
 } from '../fixtures/db'
 
@@ -12,7 +12,8 @@ export const adminHandlers = [
   // ═══════════════════════════════════════════════════════
 
   http.get('/admin/students', () => {
-    return HttpResponse.json([...studentDB])
+    // 항상 localStorage에서 최신 데이터 반환
+    return HttpResponse.json(getStudentDB())
   }),
 
   http.post('/admin/students', async ({ request }) => {
@@ -20,10 +21,14 @@ export const adminHandlers = [
     if (!body.studentId || !body.name || !body.department) {
       return HttpResponse.json({ message: '필수 항목 누락' }, { status: 400 })
     }
-    if (studentDB.find((s) => s.studentId === body.studentId)) {
+    const current = getStudentDB()
+    if (current.find((s) => s.studentId === body.studentId)) {
       return HttpResponse.json({ message: '이미 존재하는 학번' }, { status: 409 })
     }
-    studentDB.push({ ...body, isRegistered: false })
+    // localStorage에 직접 저장
+    current.push({ ...body, isRegistered: false })
+    studentDB.length = 0
+    studentDB.push(...current)
     persistDB.students()
     return HttpResponse.json(body, { status: 201 })
   }),
@@ -31,18 +36,24 @@ export const adminHandlers = [
   http.put('/admin/students/:studentId', async ({ request, params }) => {
     const studentId = params.studentId as string
     const body = await request.json() as Partial<StudentRecord>
-    const idx = studentDB.findIndex((s) => s.studentId === studentId)
+    const current = getStudentDB()
+    const idx = current.findIndex((s) => s.studentId === studentId)
     if (idx === -1) return HttpResponse.json({ message: '학생 없음' }, { status: 404 })
-    studentDB[idx] = { ...studentDB[idx], ...body }
+    current[idx] = { ...current[idx], ...body }
+    studentDB.length = 0
+    studentDB.push(...current)
     persistDB.students()
-    return HttpResponse.json(studentDB[idx])
+    return HttpResponse.json(current[idx])
   }),
 
   http.delete('/admin/students/:studentId', ({ params }) => {
     const studentId = params.studentId as string
-    const idx = studentDB.findIndex((s) => s.studentId === studentId)
+    const current = getStudentDB()
+    const idx = current.findIndex((s) => s.studentId === studentId)
     if (idx === -1) return HttpResponse.json({ message: '학생 없음' }, { status: 404 })
-    studentDB.splice(idx, 1)
+    current.splice(idx, 1)
+    studentDB.length = 0
+    studentDB.push(...current)
     // 연관 데이터도 삭제
     const removeByStudent = (arr: { studentId: string }[]) => {
       let i = arr.length - 1
@@ -63,7 +74,7 @@ export const adminHandlers = [
   // ═══════════════════════════════════════════════════════
 
   http.get('/admin/courses', () => {
-    return HttpResponse.json([...courseDB])
+    return HttpResponse.json(getCourseDB())
   }),
 
   // ═══════════════════════════════════════════════════════

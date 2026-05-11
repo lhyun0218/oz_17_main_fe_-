@@ -260,11 +260,19 @@ const storedEnrollments = load<EnrollmentRecord[]>(KEYS.enrollments, [])
 const storedGrades      = load<GradeRecord[]>(KEYS.grades,        [])
 const storedAttendance  = load<AttendanceRecord[]>(KEYS.attendance, [])
 
-export const studentDB:    StudentRecord[]    = storedStudents.length    ? mergeById(storedStudents,    INITIAL_STUDENTS,    'studentId') : [...INITIAL_STUDENTS]
-export const courseDB:     CourseRecord[]     = storedCourses.length     ? mergeById(storedCourses,     INITIAL_COURSES,     'courseId')  : [...INITIAL_COURSES]
-export const enrollmentDB: EnrollmentRecord[] = storedEnrollments.length ? [...storedEnrollments]                                         : [...INITIAL_ENROLLMENTS]
-export const gradeDB:      GradeRecord[]      = storedGrades.length      ? [...storedGrades]                                              : [...INITIAL_GRADES]
-export const attendanceDB: AttendanceRecord[] = storedAttendance.length  ? [...storedAttendance]                                          : [...INITIAL_ATTENDANCE]
+// localStorage에 데이터가 있으면 그대로 사용하고, 초기값에만 있는 항목 추가
+// localStorage에 아무것도 없으면 (null) 초기값 사용
+const hasStoredStudents    = localStorage.getItem(KEYS.students) !== null
+const hasStoredCourses     = localStorage.getItem(KEYS.courses) !== null
+const hasStoredEnrollments = localStorage.getItem(KEYS.enrollments) !== null
+const hasStoredGrades      = localStorage.getItem(KEYS.grades) !== null
+const hasStoredAttendance  = localStorage.getItem(KEYS.attendance) !== null
+
+export const studentDB:    StudentRecord[]    = hasStoredStudents    ? mergeById(storedStudents,    INITIAL_STUDENTS,    'studentId') : [...INITIAL_STUDENTS]
+export const courseDB:     CourseRecord[]     = hasStoredCourses     ? mergeById(storedCourses,     INITIAL_COURSES,     'courseId')  : [...INITIAL_COURSES]
+export const enrollmentDB: EnrollmentRecord[] = hasStoredEnrollments ? [...storedEnrollments]                                         : [...INITIAL_ENROLLMENTS]
+export const gradeDB:      GradeRecord[]      = hasStoredGrades      ? [...storedGrades]                                              : [...INITIAL_GRADES]
+export const attendanceDB: AttendanceRecord[] = hasStoredAttendance  ? [...storedAttendance]                                          : [...INITIAL_ATTENDANCE]
 
 // ─── 저장 함수 (핸들러에서 변경 후 호출) ─────────────────────
 
@@ -274,4 +282,23 @@ export const persistDB = {
   enrollments: () => save(KEYS.enrollments, enrollmentDB),
   grades:      () => save(KEYS.grades,      gradeDB),
   attendance:  () => save(KEYS.attendance,  attendanceDB),
+}
+
+// ─── 항상 최신 localStorage 데이터를 반환하는 getter ─────────
+// npm run dev 재시작 후에도 localStorage에서 직접 읽어서 최신 상태 보장
+
+export function getStudentDB(): StudentRecord[] {
+  const stored = load<StudentRecord[]>(KEYS.students, [])
+  if (localStorage.getItem(KEYS.students) !== null) {
+    return mergeById(stored, INITIAL_STUDENTS, 'studentId')
+  }
+  return [...INITIAL_STUDENTS]
+}
+
+export function getCourseDB(): CourseRecord[] {
+  const stored = load<CourseRecord[]>(KEYS.courses, [])
+  if (localStorage.getItem(KEYS.courses) !== null) {
+    return mergeById(stored, INITIAL_COURSES, 'courseId')
+  }
+  return [...INITIAL_COURSES]
 }
