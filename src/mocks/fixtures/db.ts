@@ -100,50 +100,130 @@ function save<T>(key: string, data: T): void {
   localStorage.setItem(key, JSON.stringify(data))
 }
 
-// ─── 초기 데이터 (localStorage에 없을 때만 사용) ─────────────
+// ─── 초기 학생 데이터 ─────────────────────────────────────────
 
 const INITIAL_STUDENTS: StudentRecord[] = [
-  { studentId: '20240001', name: '이현규', department: '컴퓨터소프트웨어공학', grade: '1', status: '재학', isRegistered: true, email: 'hyunkyu@hyungyu.ac.kr', phone: '010-1234-5678', admissionYear: '2024' },
-  { studentId: '20240002', name: '홍길동', department: '컴퓨터소프트웨어공학', grade: '1', status: '재학', isRegistered: false, admissionYear: '2024' },
-  { studentId: '20240003', name: '김철수', department: '전자공학', grade: '1', status: '재학', isRegistered: false, admissionYear: '2024' },
-  { studentId: '20240004', name: '이영희', department: '경영학', grade: '2', status: '휴학', isRegistered: false, admissionYear: '2023' },
-  { studentId: '20230001', name: '박민준', department: '컴퓨터소프트웨어공학', grade: '2', status: '재학', isRegistered: false, admissionYear: '2023' },
+  // 컴퓨터소프트웨어공학과
+  { studentId: '20240001', name: '이현규', department: '컴퓨터소프트웨어공학과', grade: '1', status: '재학', isRegistered: true,  email: 'hyunkyu@hyungyu.ac.kr', phone: '010-1234-5678', admissionYear: '2024' },
+  { studentId: '20240002', name: '홍길동', department: '컴퓨터소프트웨어공학과', grade: '1', status: '재학', isRegistered: false, admissionYear: '2024' },
+  { studentId: '20240003', name: '김민수', department: '컴퓨터소프트웨어공학과', grade: '1', status: '재학', isRegistered: false, admissionYear: '2024' },
+  { studentId: '20230001', name: '박민준', department: '컴퓨터소프트웨어공학과', grade: '2', status: '재학', isRegistered: false, admissionYear: '2023' },
+  { studentId: '20230002', name: '최지우', department: '컴퓨터소프트웨어공학과', grade: '2', status: '재학', isRegistered: false, admissionYear: '2023' },
+  { studentId: '20220001', name: '정다은', department: '컴퓨터소프트웨어공학과', grade: '3', status: '재학', isRegistered: false, admissionYear: '2022' },
+  // 간호학과
+  { studentId: '20240101', name: '이수진', department: '간호학과', grade: '1', status: '재학', isRegistered: false, admissionYear: '2024' },
+  { studentId: '20240102', name: '김하늘', department: '간호학과', grade: '1', status: '재학', isRegistered: false, admissionYear: '2024' },
+  { studentId: '20230101', name: '박서연', department: '간호학과', grade: '2', status: '재학', isRegistered: false, admissionYear: '2023' },
+  { studentId: '20230102', name: '윤지민', department: '간호학과', grade: '2', status: '휴학', isRegistered: false, admissionYear: '2023' },
+  { studentId: '20220101', name: '강예린', department: '간호학과', grade: '3', status: '재학', isRegistered: false, admissionYear: '2022' },
 ]
+
+// ─── 초기 강의 데이터 ─────────────────────────────────────────
 
 const INITIAL_COURSES: CourseRecord[] = [
-  { courseId: 'cs101', title: '자료구조', professorName: '김교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학', maxStudents: 40 },
-  { courseId: 'cs201', title: '알고리즘', professorName: '박교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학', maxStudents: 35 },
-  { courseId: 'cs301', title: '운영체제', professorName: '이교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학', maxStudents: 40 },
-  { courseId: 'cs401', title: '데이터베이스', professorName: '최교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학', maxStudents: 35 },
-  { courseId: 'cs501', title: '네트워크', professorName: '정교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학', maxStudents: 30 },
-  { courseId: 'cs601', title: '소프트웨어공학', professorName: '강교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학', maxStudents: 40 },
+  // 컴퓨터소프트웨어공학과 강의
+  { courseId: 'cs101', title: '자료구조',       professorName: '김교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 40 },
+  { courseId: 'cs102', title: '프로그래밍기초',  professorName: '이교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 45 },
+  { courseId: 'cs201', title: '알고리즘',        professorName: '박교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 35 },
+  { courseId: 'cs202', title: '객체지향프로그래밍', professorName: '최교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 40 },
+  { courseId: 'cs301', title: '운영체제',        professorName: '이교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 40 },
+  { courseId: 'cs302', title: '컴퓨터구조',      professorName: '정교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 35 },
+  { courseId: 'cs401', title: '데이터베이스',    professorName: '최교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 35 },
+  { courseId: 'cs402', title: '웹프로그래밍',    professorName: '강교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 40 },
+  { courseId: 'cs501', title: '네트워크',        professorName: '정교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 30 },
+  { courseId: 'cs601', title: '소프트웨어공학',  professorName: '강교수', credits: 3, semester: '2024-1', department: '컴퓨터소프트웨어공학과', maxStudents: 40 },
+  // 간호학과 강의
+  { courseId: 'nu101', title: '기초간호학',      professorName: '김간호교수', credits: 3, semester: '2024-1', department: '간호학과', maxStudents: 40 },
+  { courseId: 'nu102', title: '해부생리학',      professorName: '이간호교수', credits: 3, semester: '2024-1', department: '간호학과', maxStudents: 40 },
+  { courseId: 'nu201', title: '성인간호학I',     professorName: '박간호교수', credits: 3, semester: '2024-1', department: '간호학과', maxStudents: 35 },
+  { courseId: 'nu202', title: '기본간호실습',    professorName: '최간호교수', credits: 2, semester: '2024-1', department: '간호학과', maxStudents: 30 },
+  { courseId: 'nu301', title: '아동간호학',      professorName: '정간호교수', credits: 3, semester: '2024-1', department: '간호학과', maxStudents: 35 },
+  { courseId: 'nu302', title: '정신간호학',      professorName: '강간호교수', credits: 3, semester: '2024-1', department: '간호학과', maxStudents: 35 },
+  { courseId: 'nu401', title: '지역사회간호학',  professorName: '윤간호교수', credits: 3, semester: '2024-1', department: '간호학과', maxStudents: 40 },
+  { courseId: 'nu402', title: '간호관리학',      professorName: '한간호교수', credits: 3, semester: '2024-1', department: '간호학과', maxStudents: 40 },
 ]
 
+// ─── 초기 수강신청 데이터 ─────────────────────────────────────
+
 const INITIAL_ENROLLMENTS: EnrollmentRecord[] = [
+  // 이현규 (20240001) — 컴공과 1학년
   { studentId: '20240001', courseId: 'cs101', semester: '2024-1' },
+  { studentId: '20240001', courseId: 'cs102', semester: '2024-1' },
   { studentId: '20240001', courseId: 'cs201', semester: '2024-1' },
-  { studentId: '20240001', courseId: 'cs301', semester: '2024-1' },
   { studentId: '20240001', courseId: 'cs401', semester: '2024-1' },
   { studentId: '20240001', courseId: 'cs501', semester: '2024-1' },
   { studentId: '20240001', courseId: 'cs601', semester: '2024-1' },
+  // 홍길동 (20240002) — 컴공과 1학년
+  { studentId: '20240002', courseId: 'cs101', semester: '2024-1' },
+  { studentId: '20240002', courseId: 'cs102', semester: '2024-1' },
+  { studentId: '20240002', courseId: 'cs202', semester: '2024-1' },
+  // 박민준 (20230001) — 컴공과 2학년
+  { studentId: '20230001', courseId: 'cs201', semester: '2024-1' },
+  { studentId: '20230001', courseId: 'cs301', semester: '2024-1' },
+  { studentId: '20230001', courseId: 'cs302', semester: '2024-1' },
+  { studentId: '20230001', courseId: 'cs401', semester: '2024-1' },
+  // 이수진 (20240101) — 간호학과 1학년
+  { studentId: '20240101', courseId: 'nu101', semester: '2024-1' },
+  { studentId: '20240101', courseId: 'nu102', semester: '2024-1' },
+  // 박서연 (20230101) — 간호학과 2학년
+  { studentId: '20230101', courseId: 'nu201', semester: '2024-1' },
+  { studentId: '20230101', courseId: 'nu202', semester: '2024-1' },
+  { studentId: '20230101', courseId: 'nu301', semester: '2024-1' },
 ]
+
+// ─── 초기 성적 데이터 ─────────────────────────────────────────
 
 const INITIAL_GRADES: GradeRecord[] = [
+  // 이현규 (20240001)
   { studentId: '20240001', courseId: 'cs101', semester: '2024-1', score: 88, gradeStr: 'B+', gpa: 3.5 },
-  { studentId: '20240001', courseId: 'cs201', semester: '2024-1', score: 72, gradeStr: 'C', gpa: 2.0 },
-  { studentId: '20240001', courseId: 'cs301', semester: '2024-1', score: 95, gradeStr: 'A+', gpa: 4.5 },
-  { studentId: '20240001', courseId: 'cs401', semester: '2024-1', score: 81, gradeStr: 'B', gpa: 3.0 },
+  { studentId: '20240001', courseId: 'cs102', semester: '2024-1', score: 94, gradeStr: 'A',  gpa: 4.0 },
+  { studentId: '20240001', courseId: 'cs201', semester: '2024-1', score: 72, gradeStr: 'C',  gpa: 2.0 },
+  { studentId: '20240001', courseId: 'cs401', semester: '2024-1', score: 81, gradeStr: 'B',  gpa: 3.0 },
   { studentId: '20240001', courseId: 'cs501', semester: '2024-1', score: 65, gradeStr: 'D+', gpa: 1.5 },
-  { studentId: '20240001', courseId: 'cs601', semester: '2024-1', score: 92, gradeStr: 'A', gpa: 4.0 },
+  { studentId: '20240001', courseId: 'cs601', semester: '2024-1', score: 92, gradeStr: 'A',  gpa: 4.0 },
+  // 홍길동 (20240002)
+  { studentId: '20240002', courseId: 'cs101', semester: '2024-1', score: 76, gradeStr: 'C+', gpa: 2.5 },
+  { studentId: '20240002', courseId: 'cs102', semester: '2024-1', score: 83, gradeStr: 'B',  gpa: 3.0 },
+  // 박민준 (20230001)
+  { studentId: '20230001', courseId: 'cs201', semester: '2024-1', score: 91, gradeStr: 'A',  gpa: 4.0 },
+  { studentId: '20230001', courseId: 'cs301', semester: '2024-1', score: 85, gradeStr: 'B+', gpa: 3.5 },
+  { studentId: '20230001', courseId: 'cs302', semester: '2024-1', score: 78, gradeStr: 'C+', gpa: 2.5 },
+  { studentId: '20230001', courseId: 'cs401', semester: '2024-1', score: 96, gradeStr: 'A+', gpa: 4.5 },
+  // 이수진 (20240101)
+  { studentId: '20240101', courseId: 'nu101', semester: '2024-1', score: 89, gradeStr: 'B+', gpa: 3.5 },
+  { studentId: '20240101', courseId: 'nu102', semester: '2024-1', score: 77, gradeStr: 'C+', gpa: 2.5 },
+  // 박서연 (20230101)
+  { studentId: '20230101', courseId: 'nu201', semester: '2024-1', score: 93, gradeStr: 'A',  gpa: 4.0 },
+  { studentId: '20230101', courseId: 'nu202', semester: '2024-1', score: 88, gradeStr: 'B+', gpa: 3.5 },
+  { studentId: '20230101', courseId: 'nu301', semester: '2024-1', score: 70, gradeStr: 'C',  gpa: 2.0 },
 ]
 
+// ─── 초기 출석 데이터 ─────────────────────────────────────────
+
 const INITIAL_ATTENDANCE: AttendanceRecord[] = [
-  { studentId: '20240001', courseId: 'cs101', attendedCount: 12, totalCount: 15, rate: 80 },
+  // 이현규 (20240001)
+  { studentId: '20240001', courseId: 'cs101', attendedCount: 12, totalCount: 15, rate: 80.0 },
+  { studentId: '20240001', courseId: 'cs102', attendedCount: 15, totalCount: 15, rate: 100.0 },
   { studentId: '20240001', courseId: 'cs201', attendedCount: 10, totalCount: 15, rate: 66.7 },
-  { studentId: '20240001', courseId: 'cs301', attendedCount: 15, totalCount: 15, rate: 100 },
   { studentId: '20240001', courseId: 'cs401', attendedCount: 13, totalCount: 15, rate: 86.7 },
-  { studentId: '20240001', courseId: 'cs501', attendedCount: 8, totalCount: 15, rate: 53.3 },
+  { studentId: '20240001', courseId: 'cs501', attendedCount: 8,  totalCount: 15, rate: 53.3 },
   { studentId: '20240001', courseId: 'cs601', attendedCount: 14, totalCount: 15, rate: 93.3 },
+  // 홍길동 (20240002)
+  { studentId: '20240002', courseId: 'cs101', attendedCount: 14, totalCount: 15, rate: 93.3 },
+  { studentId: '20240002', courseId: 'cs102', attendedCount: 11, totalCount: 15, rate: 73.3 },
+  { studentId: '20240002', courseId: 'cs202', attendedCount: 13, totalCount: 15, rate: 86.7 },
+  // 박민준 (20230001)
+  { studentId: '20230001', courseId: 'cs201', attendedCount: 15, totalCount: 15, rate: 100.0 },
+  { studentId: '20230001', courseId: 'cs301', attendedCount: 12, totalCount: 15, rate: 80.0 },
+  { studentId: '20230001', courseId: 'cs302', attendedCount: 9,  totalCount: 15, rate: 60.0 },
+  { studentId: '20230001', courseId: 'cs401', attendedCount: 14, totalCount: 15, rate: 93.3 },
+  // 이수진 (20240101)
+  { studentId: '20240101', courseId: 'nu101', attendedCount: 13, totalCount: 15, rate: 86.7 },
+  { studentId: '20240101', courseId: 'nu102', attendedCount: 15, totalCount: 15, rate: 100.0 },
+  // 박서연 (20230101)
+  { studentId: '20230101', courseId: 'nu201', attendedCount: 14, totalCount: 15, rate: 93.3 },
+  { studentId: '20230101', courseId: 'nu202', attendedCount: 12, totalCount: 15, rate: 80.0 },
+  { studentId: '20230101', courseId: 'nu301', attendedCount: 10, totalCount: 15, rate: 66.7 },
 ]
 
 // ─── localStorage 키 ─────────────────────────────────────────
@@ -157,12 +237,34 @@ const KEYS = {
 }
 
 // ─── DB 인스턴스 (localStorage에서 로드, 없으면 초기값) ───────
+// 기존 localStorage 데이터가 있어도 새 강의/학생이 추가됐을 수 있으므로
+// 초기값에만 있는 항목을 병합합니다.
 
-export const studentDB:    StudentRecord[]    = load(KEYS.students,    INITIAL_STUDENTS)
-export const courseDB:     CourseRecord[]     = load(KEYS.courses,     INITIAL_COURSES)
-export const enrollmentDB: EnrollmentRecord[] = load(KEYS.enrollments, INITIAL_ENROLLMENTS)
-export const gradeDB:      GradeRecord[]      = load(KEYS.grades,      INITIAL_GRADES)
-export const attendanceDB: AttendanceRecord[] = load(KEYS.attendance,  INITIAL_ATTENDANCE)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mergeById<T extends Record<string, any>>(
+  stored: T[],
+  initial: T[],
+  idKey: keyof T,
+): T[] {
+  const result = [...stored]
+  for (const item of initial) {
+    const exists = stored.some((s) => s[idKey] === item[idKey])
+    if (!exists) result.push(item)
+  }
+  return result
+}
+
+const storedStudents    = load<StudentRecord[]>(KEYS.students,    [])
+const storedCourses     = load<CourseRecord[]>(KEYS.courses,      [])
+const storedEnrollments = load<EnrollmentRecord[]>(KEYS.enrollments, [])
+const storedGrades      = load<GradeRecord[]>(KEYS.grades,        [])
+const storedAttendance  = load<AttendanceRecord[]>(KEYS.attendance, [])
+
+export const studentDB:    StudentRecord[]    = storedStudents.length    ? mergeById(storedStudents,    INITIAL_STUDENTS,    'studentId') : [...INITIAL_STUDENTS]
+export const courseDB:     CourseRecord[]     = storedCourses.length     ? mergeById(storedCourses,     INITIAL_COURSES,     'courseId')  : [...INITIAL_COURSES]
+export const enrollmentDB: EnrollmentRecord[] = storedEnrollments.length ? [...storedEnrollments]                                         : [...INITIAL_ENROLLMENTS]
+export const gradeDB:      GradeRecord[]      = storedGrades.length      ? [...storedGrades]                                              : [...INITIAL_GRADES]
+export const attendanceDB: AttendanceRecord[] = storedAttendance.length  ? [...storedAttendance]                                          : [...INITIAL_ATTENDANCE]
 
 // ─── 저장 함수 (핸들러에서 변경 후 호출) ─────────────────────
 

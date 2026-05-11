@@ -13,6 +13,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/', icon: '🏠', label: '대시보드' },
   { to: '/courses', icon: '📚', label: '강의 목록' },
+  { to: '/enrollment', icon: '📋', label: '수강신청' },
   { to: '/assignments', icon: '📝', label: '과제 제출' },
   { to: '/attendance', icon: '📊', label: '출석 현황' },
   { to: '/grades', icon: '🎓', label: '성적 / 학점' },
