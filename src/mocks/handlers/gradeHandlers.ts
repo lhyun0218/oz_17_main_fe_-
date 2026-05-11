@@ -1,29 +1,30 @@
 import { http, HttpResponse } from 'msw'
-import { gradeDB, courseDB } from '../fixtures/db'
+import { getEnrollmentDB, getCourseDB, getGradeDB } from '../fixtures/db'
 
 export const gradeHandlers = [
-  // GET /grades — 로그인한 학생의 성적 (토큰에서 studentId 추출)
-  // MSW 환경에서는 Authorization 헤더의 토큰으로 학번 식별
   http.get('/grades', ({ request }) => {
     const auth = request.headers.get('Authorization') ?? ''
-    // 토큰 형식: mock-jwt-token-{studentId}
     const studentId = auth.replace('Bearer mock-jwt-token-', '') || '20240001'
 
-    const grades = gradeDB
-      .filter((g) => g.studentId === studentId)
-      .map((g) => {
-        const course = courseDB.find((c) => c.courseId === g.courseId)
-        return {
-          courseId: g.courseId,
-          courseName: course?.title ?? '',
-          professorName: course?.professorName ?? '',
-          credits: course?.credits ?? 3,
-          score: g.score,
-          grade: g.gradeStr,
-          semester: g.semester,
-        }
-      })
+    const enrollments = getEnrollmentDB().filter((e) => e.studentId === studentId)
+    const courses = getCourseDB()
+    const grades = getGradeDB()
 
-    return HttpResponse.json(grades)
+    const result = enrollments.map((e) => {
+      const course = courses.find((c) => c.courseId === e.courseId)
+      const grade = grades.find((g) => g.studentId === studentId && g.courseId === e.courseId)
+      return {
+        courseId: e.courseId,
+        courseName: course?.title ?? '',
+        professorName: course?.professorName ?? '',
+        credits: course?.credits ?? 3,
+        semester: e.semester,
+        score: grade?.score ?? null,
+        gradeStr: grade?.gradeStr ?? null,
+        gpa: grade?.gpa ?? null,
+      }
+    })
+
+    return HttpResponse.json(result)
   }),
 ]

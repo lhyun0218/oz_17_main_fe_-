@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import {
-  studentDB, courseDB, enrollmentDB, gradeDB, attendanceDB,
-  scoreToGrade, gradeToGpa, persistDB, getStudentDB, getCourseDB,
+  getStudentDB, getCourseDB, getEnrollmentDB, getGradeDB, getAttendanceDB,
+  persistDB, scoreToGrade, gradeToGpa,
   type StudentRecord, type GradeRecord, type EnrollmentRecord, type AttendanceRecord,
 } from '../fixtures/db'
 
@@ -12,7 +12,6 @@ export const adminHandlers = [
   // ═══════════════════════════════════════════════════════
 
   http.get('/admin/students', () => {
-    // 항상 localStorage에서 최신 데이터 반환
     return HttpResponse.json(getStudentDB())
   }),
 
@@ -21,51 +20,41 @@ export const adminHandlers = [
     if (!body.studentId || !body.name || !body.department) {
       return HttpResponse.json({ message: '필수 항목 누락' }, { status: 400 })
     }
-    const current = getStudentDB()
-    if (current.find((s) => s.studentId === body.studentId)) {
+    const students = getStudentDB()
+    if (students.find((s) => s.studentId === body.studentId)) {
       return HttpResponse.json({ message: '이미 존재하는 학번' }, { status: 409 })
     }
-    // localStorage에 직접 저장
-    current.push({ ...body, isRegistered: false })
-    studentDB.length = 0
-    studentDB.push(...current)
-    persistDB.students()
+    students.push({ ...body, isRegistered: false })
+    persistDB.students(students)
     return HttpResponse.json(body, { status: 201 })
   }),
 
   http.put('/admin/students/:studentId', async ({ request, params }) => {
     const studentId = params.studentId as string
     const body = await request.json() as Partial<StudentRecord>
-    const current = getStudentDB()
-    const idx = current.findIndex((s) => s.studentId === studentId)
+    const students = getStudentDB()
+    const idx = students.findIndex((s) => s.studentId === studentId)
     if (idx === -1) return HttpResponse.json({ message: '학생 없음' }, { status: 404 })
-    current[idx] = { ...current[idx], ...body }
-    studentDB.length = 0
-    studentDB.push(...current)
-    persistDB.students()
-    return HttpResponse.json(current[idx])
+    students[idx] = { ...students[idx], ...body }
+    persistDB.students(students)
+    return HttpResponse.json(students[idx])
   }),
 
   http.delete('/admin/students/:studentId', ({ params }) => {
     const studentId = params.studentId as string
-    const current = getStudentDB()
-    const idx = current.findIndex((s) => s.studentId === studentId)
+    const students = getStudentDB()
+    const idx = students.findIndex((s) => s.studentId === studentId)
     if (idx === -1) return HttpResponse.json({ message: '학생 없음' }, { status: 404 })
-    current.splice(idx, 1)
-    studentDB.length = 0
-    studentDB.push(...current)
-    // 연관 데이터도 삭제
-    const removeByStudent = (arr: { studentId: string }[]) => {
-      let i = arr.length - 1
-      while (i >= 0) { if (arr[i].studentId === studentId) arr.splice(i, 1); i-- }
-    }
-    removeByStudent(enrollmentDB)
-    removeByStudent(gradeDB)
-    removeByStudent(attendanceDB)
-    persistDB.students()
-    persistDB.enrollments()
-    persistDB.grades()
-    persistDB.attendance()
+    students.splice(idx, 1)
+    persistDB.students(students)
+
+    const enrollments = getEnrollmentDB().filter((e) => e.studentId !== studentId)
+    persistDB.enrollments(enrollments)
+    const grades = getGradeDB().filter((g) => g.studentId !== studentId)
+    persistDB.grades(grades)
+    const attendance = getAttendanceDB().filter((a) => a.studentId !== studentId)
+    persistDB.attendance(attendance)
+
     return new HttpResponse(null, { status: 204 })
   }),
 
@@ -83,10 +72,11 @@ export const adminHandlers = [
 
   http.get('/admin/enrollments/:studentId', ({ params }) => {
     const studentId = params.studentId as string
-    const enrollments = enrollmentDB
+    const courses = getCourseDB()
+    const enrollments = getEnrollmentDB()
       .filter((e) => e.studentId === studentId)
       .map((e) => {
-        const course = courseDB.find((c) => c.courseId === e.courseId)
+        const course = courses.find((c) => c.courseId === e.courseId)
         return { ...e, courseName: course?.title ?? '', credits: course?.credits ?? 3, professorName: course?.professorName ?? '' }
       })
     return HttpResponse.json(enrollments)
@@ -94,29 +84,34 @@ export const adminHandlers = [
 
   http.post('/admin/enrollments', async ({ request }) => {
     const body = await request.json() as EnrollmentRecord
-    const exists = enrollmentDB.find(
+    const enrollments = getEnrollmentDB()
+    const exists = enrollments.find(
       (e) => e.studentId === body.studentId && e.courseId === body.courseId
     )
     if (exists) return HttpResponse.json({ message: '이미 수강 중' }, { status: 409 })
-    enrollmentDB.push(body)
-    attendanceDB.push({ studentId: body.studentId, courseId: body.courseId, attendedCount: 0, totalCount: 15, rate: 0 })
-    persistDB.enrollments()
-    persistDB.attendance()
+    enrollments.push(body)
+    persistDB.enrollments(enrollments)
+
+    const attendance = getAttendanceDB()
+    attendance.push({ studentId: body.studentId, courseId: body.courseId, attendedCount: 0, totalCount: 15, rate: 0 })
+    persistDB.attendance(attendance)
+
     return HttpResponse.json(body, { status: 201 })
   }),
 
   http.delete('/admin/enrollments/:studentId/:courseId', ({ params }) => {
     const { studentId, courseId } = params as { studentId: string; courseId: string }
-    const idx = enrollmentDB.findIndex((e) => e.studentId === studentId && e.courseId === courseId)
+    const enrollments = getEnrollmentDB()
+    const idx = enrollments.findIndex((e) => e.studentId === studentId && e.courseId === courseId)
     if (idx === -1) return HttpResponse.json({ message: '수강 없음' }, { status: 404 })
-    enrollmentDB.splice(idx, 1)
-    const gIdx = gradeDB.findIndex((g) => g.studentId === studentId && g.courseId === courseId)
-    if (gIdx !== -1) gradeDB.splice(gIdx, 1)
-    const aIdx = attendanceDB.findIndex((a) => a.studentId === studentId && a.courseId === courseId)
-    if (aIdx !== -1) attendanceDB.splice(aIdx, 1)
-    persistDB.enrollments()
-    persistDB.grades()
-    persistDB.attendance()
+    enrollments.splice(idx, 1)
+    persistDB.enrollments(enrollments)
+
+    const grades = getGradeDB().filter((g) => !(g.studentId === studentId && g.courseId === courseId))
+    persistDB.grades(grades)
+    const attendance = getAttendanceDB().filter((a) => !(a.studentId === studentId && a.courseId === courseId))
+    persistDB.attendance(attendance)
+
     return new HttpResponse(null, { status: 204 })
   }),
 
@@ -126,10 +121,11 @@ export const adminHandlers = [
 
   http.get('/admin/grades/:studentId', ({ params }) => {
     const studentId = params.studentId as string
-    const grades = gradeDB
+    const courses = getCourseDB()
+    const grades = getGradeDB()
       .filter((g) => g.studentId === studentId)
       .map((g) => {
-        const course = courseDB.find((c) => c.courseId === g.courseId)
+        const course = courses.find((c) => c.courseId === g.courseId)
         return { ...g, courseName: course?.title ?? '', credits: course?.credits ?? 3, professorName: course?.professorName ?? '' }
       })
     return HttpResponse.json(grades)
@@ -140,25 +136,22 @@ export const adminHandlers = [
     const body = await request.json() as { score: number; semester: string }
     const gradeStr = scoreToGrade(body.score)
     const gpa = gradeToGpa(gradeStr)
-
-    const idx = gradeDB.findIndex((g) => g.studentId === studentId && g.courseId === courseId)
+    const grades = getGradeDB()
+    const idx = grades.findIndex((g) => g.studentId === studentId && g.courseId === courseId)
     const record: GradeRecord = { studentId, courseId, semester: body.semester, score: body.score, gradeStr, gpa }
-
-    if (idx === -1) {
-      gradeDB.push(record)
-    } else {
-      gradeDB[idx] = record
-    }
-    persistDB.grades()
+    if (idx === -1) grades.push(record)
+    else grades[idx] = record
+    persistDB.grades(grades)
     return HttpResponse.json(record)
   }),
 
   http.delete('/admin/grades/:studentId/:courseId', ({ params }) => {
     const { studentId, courseId } = params as { studentId: string; courseId: string }
-    const idx = gradeDB.findIndex((g) => g.studentId === studentId && g.courseId === courseId)
+    const grades = getGradeDB()
+    const idx = grades.findIndex((g) => g.studentId === studentId && g.courseId === courseId)
     if (idx === -1) return HttpResponse.json({ message: '성적 없음' }, { status: 404 })
-    gradeDB.splice(idx, 1)
-    persistDB.grades()
+    grades.splice(idx, 1)
+    persistDB.grades(grades)
     return new HttpResponse(null, { status: 204 })
   }),
 
@@ -168,10 +161,11 @@ export const adminHandlers = [
 
   http.get('/admin/attendance/:studentId', ({ params }) => {
     const studentId = params.studentId as string
-    const records = attendanceDB
+    const courses = getCourseDB()
+    const records = getAttendanceDB()
       .filter((a) => a.studentId === studentId)
       .map((a) => {
-        const course = courseDB.find((c) => c.courseId === a.courseId)
+        const course = courses.find((c) => c.courseId === a.courseId)
         return { ...a, courseName: course?.title ?? '', professorName: course?.professorName ?? '' }
       })
     return HttpResponse.json(records)
@@ -181,16 +175,12 @@ export const adminHandlers = [
     const { studentId, courseId } = params as { studentId: string; courseId: string }
     const body = await request.json() as { attendedCount: number; totalCount: number }
     const rate = body.totalCount > 0 ? Math.round((body.attendedCount / body.totalCount) * 1000) / 10 : 0
-
-    const idx = attendanceDB.findIndex((a) => a.studentId === studentId && a.courseId === courseId)
+    const attendance = getAttendanceDB()
+    const idx = attendance.findIndex((a) => a.studentId === studentId && a.courseId === courseId)
     const record: AttendanceRecord = { studentId, courseId, ...body, rate }
-
-    if (idx === -1) {
-      attendanceDB.push(record)
-    } else {
-      attendanceDB[idx] = record
-    }
-    persistDB.attendance()
+    if (idx === -1) attendance.push(record)
+    else attendance[idx] = record
+    persistDB.attendance(attendance)
     return HttpResponse.json(record)
   }),
 ]

@@ -85,20 +85,7 @@ export function calcGpa(grades: GradeRecord[]): number {
   return Math.round((totalPoints / totalCredits) * 100) / 100
 }
 
-// ─── localStorage 헬퍼 ───────────────────────────────────────
-
-function load<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? (JSON.parse(raw) as T) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-function save<T>(key: string, data: T): void {
-  localStorage.setItem(key, JSON.stringify(data))
-}
+// ─── localStorage 헬퍼 (내부 사용) ──────────────────────────
 
 // ─── 초기 학생 데이터 ─────────────────────────────────────────
 
@@ -236,10 +223,6 @@ const KEYS = {
   attendance:  'mock-db-attendance',
 }
 
-// ─── DB 인스턴스 (localStorage에서 로드, 없으면 초기값) ───────
-// 기존 localStorage 데이터가 있어도 새 강의/학생이 추가됐을 수 있으므로
-// 초기값에만 있는 항목을 병합합니다.
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mergeById<T extends Record<string, any>>(
   stored: T[],
@@ -254,51 +237,51 @@ function mergeById<T extends Record<string, any>>(
   return result
 }
 
-const storedStudents    = load<StudentRecord[]>(KEYS.students,    [])
-const storedCourses     = load<CourseRecord[]>(KEYS.courses,      [])
-const storedEnrollments = load<EnrollmentRecord[]>(KEYS.enrollments, [])
-const storedGrades      = load<GradeRecord[]>(KEYS.grades,        [])
-const storedAttendance  = load<AttendanceRecord[]>(KEYS.attendance, [])
-
-// localStorage에 데이터가 있으면 그대로 사용하고, 초기값에만 있는 항목 추가
-// localStorage에 아무것도 없으면 (null) 초기값 사용
-const hasStoredStudents    = localStorage.getItem(KEYS.students) !== null
-const hasStoredCourses     = localStorage.getItem(KEYS.courses) !== null
-const hasStoredEnrollments = localStorage.getItem(KEYS.enrollments) !== null
-const hasStoredGrades      = localStorage.getItem(KEYS.grades) !== null
-const hasStoredAttendance  = localStorage.getItem(KEYS.attendance) !== null
-
-export const studentDB:    StudentRecord[]    = hasStoredStudents    ? mergeById(storedStudents,    INITIAL_STUDENTS,    'studentId') : [...INITIAL_STUDENTS]
-export const courseDB:     CourseRecord[]     = hasStoredCourses     ? mergeById(storedCourses,     INITIAL_COURSES,     'courseId')  : [...INITIAL_COURSES]
-export const enrollmentDB: EnrollmentRecord[] = hasStoredEnrollments ? [...storedEnrollments]                                         : [...INITIAL_ENROLLMENTS]
-export const gradeDB:      GradeRecord[]      = hasStoredGrades      ? [...storedGrades]                                              : [...INITIAL_GRADES]
-export const attendanceDB: AttendanceRecord[] = hasStoredAttendance  ? [...storedAttendance]                                          : [...INITIAL_ATTENDANCE]
-
-// ─── 저장 함수 (핸들러에서 변경 후 호출) ─────────────────────
-
-export const persistDB = {
-  students:    () => save(KEYS.students,    studentDB),
-  courses:     () => save(KEYS.courses,     courseDB),
-  enrollments: () => save(KEYS.enrollments, enrollmentDB),
-  grades:      () => save(KEYS.grades,      gradeDB),
-  attendance:  () => save(KEYS.attendance,  attendanceDB),
-}
-
-// ─── 항상 최신 localStorage 데이터를 반환하는 getter ─────────
-// npm run dev 재시작 후에도 localStorage에서 직접 읽어서 최신 상태 보장
+// ─── 항상 localStorage에서 직접 읽는 getter ──────────────────
+// 메모리 배열을 쓰지 않고 매 요청마다 localStorage에서 읽어서
+// npm run dev 재시작, HMR 등 어떤 상황에서도 데이터가 유지됩니다.
 
 export function getStudentDB(): StudentRecord[] {
-  const stored = load<StudentRecord[]>(KEYS.students, [])
-  if (localStorage.getItem(KEYS.students) !== null) {
-    return mergeById(stored, INITIAL_STUDENTS, 'studentId')
-  }
-  return [...INITIAL_STUDENTS]
+  const raw = localStorage.getItem(KEYS.students)
+  const stored = raw ? (JSON.parse(raw) as StudentRecord[]) : null
+  return stored ? mergeById(stored, INITIAL_STUDENTS, 'studentId') : [...INITIAL_STUDENTS]
 }
 
 export function getCourseDB(): CourseRecord[] {
-  const stored = load<CourseRecord[]>(KEYS.courses, [])
-  if (localStorage.getItem(KEYS.courses) !== null) {
-    return mergeById(stored, INITIAL_COURSES, 'courseId')
-  }
-  return [...INITIAL_COURSES]
+  const raw = localStorage.getItem(KEYS.courses)
+  const stored = raw ? (JSON.parse(raw) as CourseRecord[]) : null
+  return stored ? mergeById(stored, INITIAL_COURSES, 'courseId') : [...INITIAL_COURSES]
 }
+
+export function getEnrollmentDB(): EnrollmentRecord[] {
+  const raw = localStorage.getItem(KEYS.enrollments)
+  return raw ? (JSON.parse(raw) as EnrollmentRecord[]) : [...INITIAL_ENROLLMENTS]
+}
+
+export function getGradeDB(): GradeRecord[] {
+  const raw = localStorage.getItem(KEYS.grades)
+  return raw ? (JSON.parse(raw) as GradeRecord[]) : [...INITIAL_GRADES]
+}
+
+export function getAttendanceDB(): AttendanceRecord[] {
+  const raw = localStorage.getItem(KEYS.attendance)
+  return raw ? (JSON.parse(raw) as AttendanceRecord[]) : [...INITIAL_ATTENDANCE]
+}
+
+// ─── localStorage에 직접 저장하는 setter ─────────────────────
+
+export const persistDB = {
+  students:    (data: StudentRecord[])    => localStorage.setItem(KEYS.students,    JSON.stringify(data)),
+  courses:     (data: CourseRecord[])     => localStorage.setItem(KEYS.courses,     JSON.stringify(data)),
+  enrollments: (data: EnrollmentRecord[]) => localStorage.setItem(KEYS.enrollments, JSON.stringify(data)),
+  grades:      (data: GradeRecord[])      => localStorage.setItem(KEYS.grades,      JSON.stringify(data)),
+  attendance:  (data: AttendanceRecord[]) => localStorage.setItem(KEYS.attendance,  JSON.stringify(data)),
+}
+
+// ─── 하위 호환용 메모리 배열 (기존 코드 참조용, 직접 수정 금지) ─
+// 새 코드는 반드시 getter/setter를 사용하세요.
+export const studentDB    = getStudentDB()
+export const courseDB     = getCourseDB()
+export const enrollmentDB = getEnrollmentDB()
+export const gradeDB      = getGradeDB()
+export const attendanceDB = getAttendanceDB()
