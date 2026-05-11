@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import {
   studentDB, courseDB, enrollmentDB, gradeDB, attendanceDB,
-  scoreToGrade, gradeToGpa,
+  scoreToGrade, gradeToGpa, persistDB,
   type StudentRecord, type GradeRecord, type EnrollmentRecord, type AttendanceRecord,
 } from '../fixtures/db'
 
@@ -24,6 +24,7 @@ export const adminHandlers = [
       return HttpResponse.json({ message: '이미 존재하는 학번' }, { status: 409 })
     }
     studentDB.push({ ...body, isRegistered: false })
+    persistDB.students()
     return HttpResponse.json(body, { status: 201 })
   }),
 
@@ -33,6 +34,7 @@ export const adminHandlers = [
     const idx = studentDB.findIndex((s) => s.studentId === studentId)
     if (idx === -1) return HttpResponse.json({ message: '학생 없음' }, { status: 404 })
     studentDB[idx] = { ...studentDB[idx], ...body }
+    persistDB.students()
     return HttpResponse.json(studentDB[idx])
   }),
 
@@ -49,6 +51,10 @@ export const adminHandlers = [
     removeByStudent(enrollmentDB)
     removeByStudent(gradeDB)
     removeByStudent(attendanceDB)
+    persistDB.students()
+    persistDB.enrollments()
+    persistDB.grades()
+    persistDB.attendance()
     return new HttpResponse(null, { status: 204 })
   }),
 
@@ -64,7 +70,6 @@ export const adminHandlers = [
   // 수강 관리
   // ═══════════════════════════════════════════════════════
 
-  // 특정 학생의 수강 목록
   http.get('/admin/enrollments/:studentId', ({ params }) => {
     const studentId = params.studentId as string
     const enrollments = enrollmentDB
@@ -76,7 +81,6 @@ export const adminHandlers = [
     return HttpResponse.json(enrollments)
   }),
 
-  // 수강 추가
   http.post('/admin/enrollments', async ({ request }) => {
     const body = await request.json() as EnrollmentRecord
     const exists = enrollmentDB.find(
@@ -84,22 +88,24 @@ export const adminHandlers = [
     )
     if (exists) return HttpResponse.json({ message: '이미 수강 중' }, { status: 409 })
     enrollmentDB.push(body)
-    // 출석 초기화
     attendanceDB.push({ studentId: body.studentId, courseId: body.courseId, attendedCount: 0, totalCount: 15, rate: 0 })
+    persistDB.enrollments()
+    persistDB.attendance()
     return HttpResponse.json(body, { status: 201 })
   }),
 
-  // 수강 취소
   http.delete('/admin/enrollments/:studentId/:courseId', ({ params }) => {
     const { studentId, courseId } = params as { studentId: string; courseId: string }
     const idx = enrollmentDB.findIndex((e) => e.studentId === studentId && e.courseId === courseId)
     if (idx === -1) return HttpResponse.json({ message: '수강 없음' }, { status: 404 })
     enrollmentDB.splice(idx, 1)
-    // 성적, 출석도 삭제
     const gIdx = gradeDB.findIndex((g) => g.studentId === studentId && g.courseId === courseId)
     if (gIdx !== -1) gradeDB.splice(gIdx, 1)
     const aIdx = attendanceDB.findIndex((a) => a.studentId === studentId && a.courseId === courseId)
     if (aIdx !== -1) attendanceDB.splice(aIdx, 1)
+    persistDB.enrollments()
+    persistDB.grades()
+    persistDB.attendance()
     return new HttpResponse(null, { status: 204 })
   }),
 
@@ -107,7 +113,6 @@ export const adminHandlers = [
   // 성적 관리
   // ═══════════════════════════════════════════════════════
 
-  // 특정 학생의 성적 목록
   http.get('/admin/grades/:studentId', ({ params }) => {
     const studentId = params.studentId as string
     const grades = gradeDB
@@ -119,7 +124,6 @@ export const adminHandlers = [
     return HttpResponse.json(grades)
   }),
 
-  // 성적 등록/수정 (upsert)
   http.put('/admin/grades/:studentId/:courseId', async ({ request, params }) => {
     const { studentId, courseId } = params as { studentId: string; courseId: string }
     const body = await request.json() as { score: number; semester: string }
@@ -134,15 +138,16 @@ export const adminHandlers = [
     } else {
       gradeDB[idx] = record
     }
+    persistDB.grades()
     return HttpResponse.json(record)
   }),
 
-  // 성적 삭제
   http.delete('/admin/grades/:studentId/:courseId', ({ params }) => {
     const { studentId, courseId } = params as { studentId: string; courseId: string }
     const idx = gradeDB.findIndex((g) => g.studentId === studentId && g.courseId === courseId)
     if (idx === -1) return HttpResponse.json({ message: '성적 없음' }, { status: 404 })
     gradeDB.splice(idx, 1)
+    persistDB.grades()
     return new HttpResponse(null, { status: 204 })
   }),
 
@@ -150,7 +155,6 @@ export const adminHandlers = [
   // 출석 관리
   // ═══════════════════════════════════════════════════════
 
-  // 특정 학생의 출석 목록
   http.get('/admin/attendance/:studentId', ({ params }) => {
     const studentId = params.studentId as string
     const records = attendanceDB
@@ -162,7 +166,6 @@ export const adminHandlers = [
     return HttpResponse.json(records)
   }),
 
-  // 출석 수정
   http.put('/admin/attendance/:studentId/:courseId', async ({ request, params }) => {
     const { studentId, courseId } = params as { studentId: string; courseId: string }
     const body = await request.json() as { attendedCount: number; totalCount: number }
@@ -176,6 +179,7 @@ export const adminHandlers = [
     } else {
       attendanceDB[idx] = record
     }
+    persistDB.attendance()
     return HttpResponse.json(record)
   }),
 ]
