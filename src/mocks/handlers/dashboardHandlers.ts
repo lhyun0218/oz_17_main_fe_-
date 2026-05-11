@@ -1,8 +1,19 @@
 import { http, HttpResponse } from 'msw'
 import { enrollmentDB, courseDB, gradeDB, attendanceDB } from '../fixtures/db'
+import { COURSE_ASSIGNMENTS } from '../fixtures/assignments'
+
+// 제출 상태 로드
+function loadSubmitted(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem('mock-submitted-assignments')
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
 
 // 주간 학습 데이터 생성 (최근 7일)
-const generateWeeklyStudyData = () => {
+function generateWeeklyStudyData() {
   const data = []
   for (let i = 6; i >= 0; i--) {
     const date = new Date()
@@ -22,7 +33,7 @@ export const dashboardHandlers = [
     const auth = request.headers.get('Authorization') ?? ''
     const studentId = auth.replace('Bearer mock-jwt-token-', '') || '20240001'
 
-    // 수강 중인 강의 목록 (enrollmentDB 기반)
+    // 수강 중인 강의 목록
     const enrollments = enrollmentDB.filter((e) => e.studentId === studentId)
     const courses = enrollments.map((e) => {
       const course = courseDB.find((c) => c.courseId === e.courseId)
@@ -39,19 +50,22 @@ export const dashboardHandlers = [
       }
     })
 
-    // 미제출 과제 (수강 강의 기반으로 생성)
-    const now = Date.now()
-    const assignments = enrollments.slice(0, 4).map((e, i) => {
-      const course = courseDB.find((c) => c.courseId === e.courseId)
-      const offsets = [12, 3 * 24, 7 * 24, -24]
-      return {
-        id: `a${i + 1}`,
-        title: `${course?.title ?? ''} 과제 ${i + 1}`,
-        courseName: course?.title ?? '',
-        dueDate: new Date(now + offsets[i] * 60 * 60 * 1000).toISOString(),
-        isSubmitted: false,
-      }
+    // 수강 중인 강의의 실제 과제 목록 (미제출 우선, 마감 임박 순, 최대 4개)
+    const submitted = loadSubmitted()
+    const allMyAssignments = enrollments.flatMap((e) => {
+      const courseAssignments = COURSE_ASSIGNMENTS[e.courseId] ?? []
+      return courseAssignments.map((a) => ({
+        id: a.id,
+        title: a.title,
+        courseName: a.courseName,
+        dueDate: a.dueDate,
+        isSubmitted: !!submitted[a.id],
+      }))
     })
+    const assignments = allMyAssignments
+      .filter((a) => !a.isSubmitted)
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 4)
 
     // 전체 출석률
     const myAttendance = attendanceDB.filter((a) => a.studentId === studentId)
