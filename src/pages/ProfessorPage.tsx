@@ -30,29 +30,19 @@ export default function ProfessorPage() {
     const fetchCourses = async () => {
       setCoursesLoading(true)
       try {
+        // professorName을 헤더로 직접 전달 (토큰 파싱 이슈 우회)
         const res = await fetch('/professor/courses', {
-          headers: { Authorization: `Bearer ${professorToken}` },
+          headers: {
+            Authorization: `Bearer ${professorToken}`,
+            'X-Professor-Name': professorName ?? '',
+          },
         })
         if (res.ok) {
           const data = await res.json()
           setCourses(data)
-        } else if (res.status === 401) {
-          // 토큰 만료 시 professorName으로 재시도
-          if (professorName) {
-            const retry = await fetch('/professor/courses', {
-              headers: { Authorization: `Bearer prof-token-${professorName}-0` },
-            })
-            if (retry.ok) {
-              const data = await retry.json()
-              setCourses(data)
-            } else {
-              professorLogout()
-              navigate('/admin/login')
-            }
-          } else {
-            professorLogout()
-            navigate('/admin/login')
-          }
+        } else {
+          professorLogout()
+          navigate('/admin/login')
         }
       } catch {
         // 네트워크 오류 무시
@@ -60,7 +50,9 @@ export default function ProfessorPage() {
         setCoursesLoading(false)
       }
     }
-    fetchCourses()
+    if (professorName) {
+      fetchCourses()
+    }
   }, [professorToken, professorName, professorLogout, navigate])
 
   // 채팅 메시지 조회

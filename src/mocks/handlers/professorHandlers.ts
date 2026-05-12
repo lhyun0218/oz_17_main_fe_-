@@ -46,6 +46,14 @@ export const professorHandlers = [
 
   // GET /professor/courses — 담당 강의 목록 조회
   http.get('/professor/courses', ({ request }) => {
+    // X-Professor-Name 헤더로 직접 교수명 받기 (가장 확실한 방법)
+    const professorNameHeader = request.headers.get('X-Professor-Name')
+    if (professorNameHeader) {
+      const courses = getCourseDB().filter((c) => c.professorName === professorNameHeader)
+      return HttpResponse.json(courses)
+    }
+
+    // 폴백: Authorization 토큰에서 추출
     const authHeader = request.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return HttpResponse.json({ message: '인증이 필요합니다.' }, { status: 401 })
@@ -53,14 +61,13 @@ export const professorHandlers = [
 
     const token = authHeader.replace('Bearer ', '')
 
-    // 1. localStorage 토큰 저장소에서 검색
+    // localStorage 토큰 저장소에서 검색
     const store = loadTokenStore()
     let professorName = store[token]
 
-    // 2. prof-token-{name}-{timestamp} 형식에서 이름 추출
+    // prof-token-{name}-{timestamp} 형식에서 이름 추출
     if (!professorName && token.startsWith('prof-token-')) {
       const withoutPrefix = token.replace('prof-token-', '')
-      // 마지막 '-숫자' 부분 제거 (timestamp)
       const nameMatch = withoutPrefix.match(/^(.+)-\d+$/)
       if (nameMatch) {
         const extracted = nameMatch[1]
