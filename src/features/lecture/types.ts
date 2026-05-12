@@ -23,4 +23,5 @@ export interface ChatMessage {
   authorName: string
   content: string
   createdAt: string
+  isProfessor?: boolean
 }

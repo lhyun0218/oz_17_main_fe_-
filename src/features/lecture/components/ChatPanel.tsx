@@ -59,16 +59,33 @@ export default function ChatPanel({ courseId }: ChatPanelProps) {
         {messages.map((msg) => {
           const isMe = msg.authorName === user?.name
           return (
-            <div key={msg.id} className="flex flex-col gap-0.5">
+            <div
+              key={msg.id}
+              className={[
+                'flex flex-col gap-0.5',
+                msg.isProfessor
+                  ? 'bg-yellow-900/20 border-l-2 border-yellow-500/50 pl-2 rounded'
+                  : '',
+              ].join(' ')}
+            >
               <div className="flex items-baseline gap-2">
                 <span
                   className={[
                     'text-xs font-bold',
-                    isMe ? 'text-red-400' : 'text-blue-400',
+                    msg.isProfessor
+                      ? 'text-yellow-400'
+                      : isMe
+                      ? 'text-red-400'
+                      : 'text-blue-400',
                   ].join(' ')}
                 >
                   {msg.authorName}
                 </span>
+                {msg.isProfessor && (
+                  <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1 rounded">
+                    교수
+                  </span>
+                )}
                 <span className="text-gray-500 text-[10px]">
                   {formatChatTime(msg.createdAt)}
                 </span>

@@ -13,11 +13,19 @@ import EnrollmentPage from './pages/EnrollmentPage'
 import AssignmentsPage from './pages/AssignmentsPage'
 import AdminLoginPage from './pages/AdminLoginPage'
 import AdminPage from './pages/AdminPage'
+import ProfessorPage from './pages/ProfessorPage'
 import useAdminStore from './store/adminStore'
+import useProfessorStore from './store/professorStore'
 
 function AdminProtectedRoute() {
   const { isAdminAuthenticated } = useAdminStore()
   if (!isAdminAuthenticated) return <Navigate to="/admin/login" replace />
+  return <Outlet />
+}
+
+function ProfessorProtectedRoute() {
+  const { isProfessorAuthenticated } = useProfessorStore()
+  if (!isProfessorAuthenticated) return <Navigate to="/admin/login" replace />
   return <Outlet />
 }
 
@@ -31,6 +39,10 @@ function App() {
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route element={<AdminProtectedRoute />}>
           <Route path="/admin" element={<AdminPage />} />
+        </Route>
+
+        <Route element={<ProfessorProtectedRoute />}>
+          <Route path="/professor" element={<ProfessorPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
