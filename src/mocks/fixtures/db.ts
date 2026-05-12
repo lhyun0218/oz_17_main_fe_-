@@ -250,7 +250,18 @@ export function getStudentDB(): StudentRecord[] {
 export function getCourseDB(): CourseRecord[] {
   const raw = localStorage.getItem(KEYS.courses)
   const stored = raw ? (JSON.parse(raw) as CourseRecord[]) : null
-  return stored ? mergeById(stored, INITIAL_COURSES, 'courseId') : [...INITIAL_COURSES]
+  if (!stored) return [...INITIAL_COURSES]
+
+  // 기존 강의의 professorName이 없거나 비어있으면 INITIAL_COURSES 값으로 덮어씀
+  const merged = mergeById(stored, INITIAL_COURSES, 'courseId')
+  const updated = merged.map((course) => {
+    const initial = INITIAL_COURSES.find((c) => c.courseId === course.courseId)
+    if (initial && (!course.professorName || course.professorName === '')) {
+      return { ...course, professorName: initial.professorName }
+    }
+    return course
+  })
+  return updated
 }
 
 export function getEnrollmentDB(): EnrollmentRecord[] {
