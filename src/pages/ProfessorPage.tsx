@@ -37,8 +37,22 @@ export default function ProfessorPage() {
           const data = await res.json()
           setCourses(data)
         } else if (res.status === 401) {
-          professorLogout()
-          navigate('/admin/login')
+          // 토큰 만료 시 professorName으로 재시도
+          if (professorName) {
+            const retry = await fetch('/professor/courses', {
+              headers: { Authorization: `Bearer prof-token-${professorName}-0` },
+            })
+            if (retry.ok) {
+              const data = await retry.json()
+              setCourses(data)
+            } else {
+              professorLogout()
+              navigate('/admin/login')
+            }
+          } else {
+            professorLogout()
+            navigate('/admin/login')
+          }
         }
       } catch {
         // 네트워크 오류 무시
@@ -47,7 +61,7 @@ export default function ProfessorPage() {
       }
     }
     fetchCourses()
-  }, [professorToken, professorLogout, navigate])
+  }, [professorToken, professorName, professorLogout, navigate])
 
   // 채팅 메시지 조회
   const fetchMessages = useCallback(async (courseId: string) => {

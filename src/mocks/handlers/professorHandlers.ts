@@ -53,16 +53,17 @@ export const professorHandlers = [
 
     const token = authHeader.replace('Bearer ', '')
 
-    // localStorage에서 토큰 검증 (새로고침 후에도 유지)
+    // 1. localStorage 토큰 저장소에서 검색
     const store = loadTokenStore()
     let professorName = store[token]
 
-    // 토큰이 없으면 prof-token-{name}-{timestamp} 형식에서 이름 추출 시도
+    // 2. prof-token-{name}-{timestamp} 형식에서 이름 추출
     if (!professorName && token.startsWith('prof-token-')) {
-      const parts = token.split('-')
-      // prof-token-{name}-{timestamp} → name은 인덱스 2부터 마지막-1까지
-      if (parts.length >= 4) {
-        const extracted = parts.slice(2, parts.length - 1).join('-')
+      const withoutPrefix = token.replace('prof-token-', '')
+      // 마지막 '-숫자' 부분 제거 (timestamp)
+      const nameMatch = withoutPrefix.match(/^(.+)-\d+$/)
+      if (nameMatch) {
+        const extracted = nameMatch[1]
         const professors = [...new Set(getCourseDB().map((c) => c.professorName))]
         if (professors.includes(extracted)) {
           professorName = extracted

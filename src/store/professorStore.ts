@@ -22,15 +22,12 @@ const useProfessorStore = create<ProfessorState>()(
     }),
     {
       name: 'professor-storage',
+      // token, name, authenticated 모두 localStorage에 저장
       partialize: (state) => ({
         professorToken: state.professorToken,
         professorName: state.professorName,
+        isProfessorAuthenticated: state.isProfessorAuthenticated,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state?.professorToken) {
-          state.isProfessorAuthenticated = true
-        }
-      },
     }
   )
 )
