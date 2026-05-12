@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import useProfessorStore from '../store/professorStore'
 import type { ChatMessage } from '../features/lecture/types'
 import type { CourseRecord } from '../mocks/fixtures/db'
+import { getCourseDB } from '../mocks/fixtures/db'
 import { formatChatTime } from '../shared/utils/formatDate'
 
 const POLL_INTERVAL = 3000
 
 export default function ProfessorPage() {
   const navigate = useNavigate()
-  const { professorName, professorToken, professorLogout } = useProfessorStore()
+  const { professorName, professorLogout } = useProfessorStore()
 
   const [courses, setCourses] = useState<CourseRecord[]>([])
   const [coursesLoading, setCoursesLoading] = useState(true)
@@ -25,35 +26,17 @@ export default function ProfessorPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // 담당 강의 목록 조회
+  // 담당 강의 목록 — MSW 거치지 않고 getCourseDB() 직접 사용
   useEffect(() => {
-    const fetchCourses = async () => {
-      setCoursesLoading(true)
-      try {
-        // professorName을 헤더로 직접 전달 (토큰 파싱 이슈 우회)
-        const res = await fetch('/professor/courses', {
-          headers: {
-            Authorization: `Bearer ${professorToken}`,
-            'X-Professor-Name': professorName ?? '',
-          },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setCourses(data)
-        } else {
-          professorLogout()
-          navigate('/admin/login')
-        }
-      } catch {
-        // 네트워크 오류 무시
-      } finally {
-        setCoursesLoading(false)
-      }
+    if (!professorName) {
+      setCoursesLoading(false)
+      return
     }
-    if (professorName) {
-      fetchCourses()
-    }
-  }, [professorToken, professorName, professorLogout, navigate])
+    setCoursesLoading(true)
+    const myCourses = getCourseDB().filter((c) => c.professorName === professorName)
+    setCourses(myCourses)
+    setCoursesLoading(false)
+  }, [professorName])
 
   // 채팅 메시지 조회
   const fetchMessages = useCallback(async (courseId: string) => {
