@@ -26,14 +26,28 @@ export default function ProfessorPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // 담당 강의 목록 — MSW 거치지 않고 getCourseDB() 직접 사용
+  // 담당 강의 목록 — getCourseDB() 직접 사용
+  // professorName이 null이면 localStorage에서 직접 읽어서 폴백
   useEffect(() => {
-    if (!professorName) {
+    // localStorage에서 professorName 직접 읽기 (rehydrate 타이밍 이슈 우회)
+    let name = professorName
+    if (!name) {
+      try {
+        const raw = localStorage.getItem('professor-storage')
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          name = parsed?.state?.professorName ?? null
+        }
+      } catch { /* ignore */ }
+    }
+
+    if (!name) {
       setCoursesLoading(false)
       return
     }
+
     setCoursesLoading(true)
-    const myCourses = getCourseDB().filter((c) => c.professorName === professorName)
+    const myCourses = getCourseDB().filter((c) => c.professorName === name)
     setCourses(myCourses)
     setCoursesLoading(false)
   }, [professorName])
