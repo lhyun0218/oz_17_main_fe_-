@@ -56,8 +56,8 @@ const AttendancePage = () => {
             <h2 className="text-base font-semibold text-gray-700 mb-4">강의별 출석 현황</h2>
             <div className="flex flex-col gap-3">
               {data?.courses.map((course) => {
-                // 강의별 출석률은 전체 출석률 기준으로 시뮬레이션
-                const courseRate = Math.min(100, Math.max(0, (attendance?.rate ?? 0) + (Math.random() * 20 - 10)))
+                // DB의 실제 강의별 출석률 사용
+                const courseRate = (course as typeof course & { attendanceRate?: number }).attendanceRate ?? 0
                 const warn = courseRate < 75
                 return (
                   <div key={course.id} className="flex items-center gap-4">
@@ -68,11 +68,11 @@ const AttendancePage = () => {
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${warn ? 'bg-red-400' : 'bg-green-400'}`}
-                        style={{ width: `${courseRate.toFixed(0)}%` }}
+                        style={{ width: `${courseRate}%` }}
                       />
                     </div>
                     <span className={`text-sm font-semibold w-12 text-right ${warn ? 'text-red-500' : 'text-green-500'}`}>
-                      {courseRate.toFixed(0)}%
+                      {courseRate.toFixed(1)}%
                     </span>
                   </div>
                 )

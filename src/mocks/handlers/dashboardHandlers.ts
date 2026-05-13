@@ -46,6 +46,10 @@ export const dashboardHandlers = [
         thumbnailUrl: null,
         score: grade?.score ?? null,
         gradeStr: grade?.gradeStr ?? null,
+        // 강의별 실제 출석 데이터 포함
+        attendedCount: att?.attendedCount ?? 0,
+        totalCount: att?.totalCount ?? 0,
+        attendanceRate: att?.rate ?? 0,
       }
     })
 
