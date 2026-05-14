@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAdminStore from '../store/adminStore'
 import apiClient from '../lib/axios'
-import type { StudentRecord, GradeRecord, AttendanceRecord, CourseRecord } from '../mocks/fixtures/db'
+import type { StudentRecord, AttendanceRecord, CourseRecord } from '../mocks/fixtures/db'
 import { scoreToGrade, gradeToGpa } from '../mocks/fixtures/db'
 
 type Tab = 'students' | 'grades' | 'enrollment' | 'attendance'
@@ -12,10 +12,15 @@ interface EnrollmentWithCourse extends CourseRecord {
   semester: string
 }
 
-interface GradeWithCourse extends GradeRecord {
+interface GradeWithCourse {
+  courseId: string
   courseName: string
   credits: number
   professorName: string
+  semester: string
+  score: number | null
+  gradeStr: string | null
+  gpa: number | null
 }
 
 interface AttendanceWithCourse extends AttendanceRecord {
@@ -289,9 +294,11 @@ function GradesTab({ showToast }: { showToast: (msg: string, type?: 'success' | 
     'F': 'bg-red-100 text-red-700',
   }
 
+  const gradedItems = grades.filter((g) => g.gradeStr !== null)
   const totalCredits = grades.reduce((s, g) => s + (g.credits ?? 3), 0)
-  const gpa = totalCredits > 0
-    ? Math.round(grades.reduce((s, g) => s + gradeToGpa(g.gradeStr) * (g.credits ?? 3), 0) / totalCredits * 100) / 100
+  const gradedCredits = gradedItems.reduce((s, g) => s + (g.credits ?? 3), 0)
+  const gpa = gradedCredits > 0
+    ? Math.round(gradedItems.reduce((s, g) => s + gradeToGpa(g.gradeStr!) * (g.credits ?? 3), 0) / gradedCredits * 100) / 100
     : 0
 
   return (
@@ -336,7 +343,7 @@ function GradesTab({ showToast }: { showToast: (msg: string, type?: 'success' | 
         </div>
       )}
 
-      {selectedId && grades.length > 0 && (
+      {selectedId && gradedItems.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-t-indigo-400">
             <p className="text-xs text-gray-500">평균 GPA</p>
@@ -344,7 +351,7 @@ function GradesTab({ showToast }: { showToast: (msg: string, type?: 'success' | 
           </div>
           <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-t-blue-400">
             <p className="text-xs text-gray-500">이수 학점</p>
-            <p className="text-3xl font-bold text-blue-600 mt-1">{grades.filter((g) => g.gradeStr !== 'F').reduce((s, g) => s + (g.credits ?? 3), 0)}</p>
+            <p className="text-3xl font-bold text-blue-600 mt-1">{gradedItems.filter((g) => g.gradeStr !== 'F').reduce((s, g) => s + (g.credits ?? 3), 0)}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-4 border-t-4 border-t-gray-400">
             <p className="text-xs text-gray-500">신청 학점</p>
@@ -373,22 +380,34 @@ function GradesTab({ showToast }: { showToast: (msg: string, type?: 'success' | 
                     {editingCourse === g.courseId ? (
                       <input type="number" min="0" max="100" value={editScore} onChange={(e) => setEditScore(e.target.value)}
                         className="w-20 rounded border border-gray-300 px-2 py-1 text-sm" />
-                    ) : (
+                    ) : g.score !== null ? (
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                           <div className="h-full rounded-full bg-indigo-400" style={{ width: `${g.score}%` }} />
                         </div>
                         <span>{g.score}</span>
                       </div>
+                    ) : (
+                      <span className="text-gray-300 text-xs">미입력</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${gradeColors[g.gradeStr] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {editingCourse === g.courseId ? scoreToGrade(Number(editScore)) : g.gradeStr}
-                    </span>
+                    {editingCourse === g.courseId ? (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${gradeColors[scoreToGrade(Number(editScore))] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {scoreToGrade(Number(editScore))}
+                      </span>
+                    ) : g.gradeStr ? (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${gradeColors[g.gradeStr] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {g.gradeStr}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300 text-xs">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 font-semibold text-indigo-600">
-                    {editingCourse === g.courseId ? gradeToGpa(scoreToGrade(Number(editScore))).toFixed(1) : g.gpa.toFixed(1)}
+                    {editingCourse === g.courseId
+                      ? gradeToGpa(scoreToGrade(Number(editScore))).toFixed(1)
+                      : g.gradeStr ? gradeToGpa(g.gradeStr).toFixed(1) : <span className="text-gray-300 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3 text-right">
                     {editingCourse === g.courseId ? (
@@ -405,18 +424,22 @@ function GradesTab({ showToast }: { showToast: (msg: string, type?: 'success' | 
                       </>
                     ) : (
                       <>
-                        <button onClick={() => { setEditingCourse(g.courseId); setEditScore(String(g.score)) }} className="text-indigo-600 hover:underline text-xs mr-3">수정</button>
-                        <button onClick={async () => {
-                          if (!confirm('성적을 삭제하시겠습니까?')) return
-                          try { await apiClient.delete(`/admin/grades/${selectedId}/${g.courseId}`); await fetchGrades(selectedId); showToast('삭제 완료') }
-                          catch { showToast('삭제 실패', 'error') }
-                        }} className="text-red-500 hover:underline text-xs">삭제</button>
+                        <button onClick={() => { setEditingCourse(g.courseId); setEditScore(String(g.score ?? '')) }} className="text-indigo-600 hover:underline text-xs mr-3">
+                          {g.score !== null ? '수정' : '입력'}
+                        </button>
+                        {g.score !== null && (
+                          <button onClick={async () => {
+                            if (!confirm('성적을 삭제하시겠습니까?')) return
+                            try { await apiClient.delete(`/admin/grades/${selectedId}/${g.courseId}`); await fetchGrades(selectedId); showToast('삭제 완료') }
+                            catch { showToast('삭제 실패', 'error') }
+                          }} className="text-red-500 hover:underline text-xs">삭제</button>
+                        )}
                       </>
                     )}
                   </td>
                 </tr>
               ))}
-              {grades.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm">성적 데이터 없음</td></tr>}
+              {grades.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm">수강신청한 과목이 없습니다</td></tr>}
             </tbody>
           </table>
         </div>

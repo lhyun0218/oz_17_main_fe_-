@@ -3,15 +3,15 @@ import apiClient from '../lib/axios'
 import { gradeToGpa } from '../mocks/fixtures/db'
 import SkeletonCard from '../shared/components/SkeletonCard'
 
-// API에서 반환하는 성적 데이터 타입 (gradeHandlers.ts 기준)
 interface GradeApiItem {
   courseId: string
   courseName: string
   professorName: string
   credits: number
-  score: number
-  grade: string      // gradeStr 필드를 grade로 매핑
   semester: string
+  score: number | null
+  gradeStr: string | null
+  gpa: number | null
 }
 
 const gradeColors: Record<string, string> = {
@@ -33,7 +33,7 @@ export default function GradesPage() {
       const res = await apiClient.get<GradeApiItem[]>('/grades')
       return res.data
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0, // 항상 최신 데이터 사용
   })
 
   if (isError) {
@@ -44,10 +44,13 @@ export default function GradesPage() {
     )
   }
 
-  const totalCredits = grades ? grades.reduce((s, g) => s + g.credits, 0) : 0
-  const earnedCredits = grades ? grades.filter((g) => g.grade !== 'F').reduce((s, g) => s + g.credits, 0) : 0
-  const gpa = totalCredits > 0
-    ? Math.round(grades!.reduce((s, g) => s + gradeToGpa(g.grade) * g.credits, 0) / totalCredits * 100) / 100
+  // 성적이 있는 과목만 GPA 계산에 포함
+  const gradedItems = grades?.filter((g) => g.gradeStr !== null) ?? []
+  const totalCredits = grades?.reduce((s, g) => s + g.credits, 0) ?? 0
+  const gradedCredits = gradedItems.reduce((s, g) => s + g.credits, 0)
+  const earnedCredits = gradedItems.filter((g) => g.gradeStr !== 'F').reduce((s, g) => s + g.credits, 0)
+  const gpa = gradedCredits > 0
+    ? Math.round(gradedItems.reduce((s, g) => s + gradeToGpa(g.gradeStr!) * g.credits, 0) / gradedCredits * 100) / 100
     : 0
 
   return (
@@ -105,38 +108,47 @@ export default function GradesPage() {
                     <td className="px-4 py-3 text-gray-500">{g.professorName}</td>
                     <td className="px-4 py-3 text-center text-gray-600">{g.credits}학점</td>
                     <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-indigo-400"
-                            style={{ width: `${g.score}%` }}
-                          />
+                      {g.score !== null ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-indigo-400" style={{ width: `${g.score}%` }} />
+                          </div>
+                          <span className="text-gray-600 w-8 text-right">{g.score}</span>
                         </div>
-                        <span className="text-gray-600 w-8 text-right">{g.score}</span>
-                      </div>
+                      ) : (
+                        <span className="text-gray-300 text-xs">미입력</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${gradeColors[g.grade] ?? 'bg-gray-100 text-gray-600'}`}>
-                        {g.grade}
-                      </span>
+                      {g.gradeStr ? (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${gradeColors[g.gradeStr] ?? 'bg-gray-100 text-gray-600'}`}>
+                          {g.gradeStr}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center font-semibold text-indigo-600">
-                      {gradeToGpa(g.grade).toFixed(1)}
+                      {g.gradeStr ? gradeToGpa(g.gradeStr).toFixed(1) : <span className="text-gray-300 text-xs">—</span>}
                     </td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-gray-50 border-t border-gray-200">
-                <tr>
-                  <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-gray-700">합계 / 평균</td>
-                  <td className="px-4 py-3 text-center text-sm font-semibold text-gray-700">{totalCredits}학점</td>
-                  <td className="px-4 py-3 text-center text-sm text-gray-500">
-                    {grades ? Math.round(grades.reduce((s, g) => s + g.score, 0) / grades.length) : 0}점
-                  </td>
-                  <td className="px-4 py-3" />
-                  <td className="px-4 py-3 text-center text-sm font-bold text-indigo-600">{gpa.toFixed(2)}</td>
-                </tr>
-              </tfoot>
+              {gradedItems.length > 0 && (
+                <tfoot className="bg-gray-50 border-t border-gray-200">
+                  <tr>
+                    <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-gray-700">합계 / 평균</td>
+                    <td className="px-4 py-3 text-center text-sm font-semibold text-gray-700">{totalCredits}학점</td>
+                    <td className="px-4 py-3 text-center text-sm text-gray-500">
+                      {gradedItems.length > 0
+                        ? Math.round(gradedItems.reduce((s, g) => s + (g.score ?? 0), 0) / gradedItems.length)
+                        : 0}점
+                    </td>
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 text-center text-sm font-bold text-indigo-600">{gpa.toFixed(2)}</td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </>

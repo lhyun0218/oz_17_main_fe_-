@@ -119,16 +119,29 @@ export const adminHandlers = [
   // 성적 관리
   // ═══════════════════════════════════════════════════════
 
+  // 성적 관리 — 수강신청한 과목 전부 반환 (성적 없는 과목도 포함)
   http.get('/admin/grades/:studentId', ({ params }) => {
     const studentId = params.studentId as string
     const courses = getCourseDB()
     const grades = getGradeDB()
-      .filter((g) => g.studentId === studentId)
-      .map((g) => {
-        const course = courses.find((c) => c.courseId === g.courseId)
-        return { ...g, courseName: course?.title ?? '', credits: course?.credits ?? 3, professorName: course?.professorName ?? '' }
-      })
-    return HttpResponse.json(grades)
+    const enrollments = getEnrollmentDB().filter((e) => e.studentId === studentId)
+
+    // 수강신청한 모든 과목을 기준으로, 성적이 있으면 포함 없으면 null
+    const result = enrollments.map((e) => {
+      const course = courses.find((c) => c.courseId === e.courseId)
+      const grade = grades.find((g) => g.studentId === studentId && g.courseId === e.courseId)
+      return {
+        courseId: e.courseId,
+        courseName: course?.title ?? '',
+        credits: course?.credits ?? 3,
+        professorName: course?.professorName ?? '',
+        semester: e.semester,
+        score: grade?.score ?? null,
+        gradeStr: grade?.gradeStr ?? null,
+        gpa: grade?.gpa ?? null,
+      }
+    })
+    return HttpResponse.json(result)
   }),
 
   http.put('/admin/grades/:studentId/:courseId', async ({ request, params }) => {

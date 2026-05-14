@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { getEnrollmentDB, getCourseDB, getGradeDB } from '../fixtures/db'
 
 export const gradeHandlers = [
+  // GET /grades — 수강신청한 모든 과목 반환 (성적 없는 과목도 포함)
   http.get('/grades', ({ request }) => {
     const auth = request.headers.get('Authorization') ?? ''
     const studentId = auth.replace('Bearer mock-jwt-token-', '') || '20240001'
@@ -20,7 +21,7 @@ export const gradeHandlers = [
         credits: course?.credits ?? 3,
         semester: e.semester,
         score: grade?.score ?? null,
-        gradeStr: grade?.gradeStr ?? null,
+        gradeStr: grade?.gradeStr ?? null,  // 필드명 gradeStr로 통일
         gpa: grade?.gpa ?? null,
       }
     })
