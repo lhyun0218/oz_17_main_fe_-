@@ -80,7 +80,7 @@ const EnrollmentPage = () => {
   const available = filtered.filter((c) => !c.isEnrolled)
 
   return (
-    <div className="p-6 flex flex-col gap-6 max-w-4xl mx-auto">
+    <div className="p-6 flex flex-col gap-6 max-w-4xl mx-auto w-full">
       {/* 토스트 */}
       {toast && (
         <div
