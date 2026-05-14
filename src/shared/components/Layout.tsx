@@ -41,7 +41,9 @@ const Layout = () => {
           className="flex-1 overflow-auto bg-gray-50"
           tabIndex={-1}
         >
-          <Outlet />
+          <div className="min-h-full">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

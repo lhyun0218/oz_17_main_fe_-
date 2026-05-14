@@ -36,7 +36,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="p-6 flex flex-col gap-6">
+    <div className="p-6 flex flex-col gap-6 max-w-screen-2xl mx-auto w-full">
       {/* 페이지 헤더 — 학생 정보 카드 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -30,7 +30,7 @@ export default function ChatPanel({ courseId }: ChatPanelProps) {
   const charCount = contentValue?.length ?? 0
 
   return (
-    <div className="flex flex-col h-full bg-[#1a1a2e] text-white">
+    <div className="flex flex-col h-full min-h-0 bg-[#1a1a2e] text-white">
       {/* 연결 끊김 경고 배너 */}
       {connectionError && (
         <div
@@ -43,7 +43,7 @@ export default function ChatPanel({ courseId }: ChatPanelProps) {
       )}
 
       {/* 메시지 목록 */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
         {isLoading && (
           <div className="flex items-center justify-center h-16 text-gray-500 text-sm">
             메시지를 불러오는 중...

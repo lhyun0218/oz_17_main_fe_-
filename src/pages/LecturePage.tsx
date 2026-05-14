@@ -109,8 +109,8 @@ export default function LecturePage() {
         {/* 사이드바 — 모바일: 전체화면 오버레이, 데스크탑: 우측 고정 */}
         <div className={[
           'bg-[#1a1a2e] flex-shrink-0 border-l border-gray-700',
-          // 데스크탑: 항상 표시
-          'lg:w-80 lg:flex lg:flex-col',
+          // 데스크탑: 항상 표시, 너비 고정
+          'lg:w-80 xl:w-96 lg:flex lg:flex-col',
           // 모바일: 토글
           showSidebar
             ? 'flex flex-col w-full absolute inset-0 z-20'
@@ -130,12 +130,14 @@ export default function LecturePage() {
             </button>
           </div>
 
-          <LectureSidebar
-            outline={outline}
-            activeLectureId={activeLecture?.id ?? null}
-            onSelectLecture={handleSelectLecture}
-            courseId={courseId}
-          />
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <LectureSidebar
+              outline={outline}
+              activeLectureId={activeLecture?.id ?? null}
+              onSelectLecture={handleSelectLecture}
+              courseId={courseId}
+            />
+          </div>
         </div>
       </div>
     </div>
