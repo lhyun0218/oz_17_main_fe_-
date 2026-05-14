@@ -98,6 +98,19 @@ export const lectureHandlers = [
     }
 
     const store = getChatStore()
+
+    // 중복 전송 방지: 동일 채널에 1초 이내 동일 내용+작성자 메시지가 있으면 무시
+    const existing = store[channelKey] ?? []
+    const oneSecondAgo = Date.now() - 1000
+    const isDuplicate = existing.some(
+      (m) =>
+        m.content === body.content &&
+        m.authorName === newMessage.authorName &&
+        new Date(m.createdAt).getTime() > oneSecondAgo
+    )
+    if (isDuplicate) {
+      return HttpResponse.json(existing[existing.length - 1], { status: 201 })
+    }
     if (!store[channelKey]) store[channelKey] = []
     store[channelKey] = [...store[channelKey], newMessage]
     saveChatStore(store)

@@ -22,6 +22,7 @@ export function useChat(courseId: string) {
   const mutation = useMutation({
     mutationFn: (content: string) => sendChatMessage(courseId, content),
     onSuccess: () => {
+      form.reset()
       queryClient.invalidateQueries({ queryKey: ['chat', courseId] })
     },
   })
@@ -34,11 +35,8 @@ export function useChat(courseId: string) {
   })
 
   const onSubmit = form.handleSubmit((values) => {
-    mutation.mutate(values.content, {
-      onSuccess: () => {
-        form.reset()
-      },
-    })
+    if (mutation.isPending) return  // 전송 중 중복 방지
+    mutation.mutate(values.content)
   })
 
   // 연결 끊김 상태 메시지
